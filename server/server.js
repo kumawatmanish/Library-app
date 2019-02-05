@@ -1,19 +1,20 @@
 const express = require('express');
 const bodyParser = require('body-parser');
+const _ = require('lodash');
+
 
 const {mongoose}  = require('./db/mongoose');
 const Author = require('./model/author');
 const Book = require('./model/book');
 const BookInstance = require('./model/bookInstance');
+const {User} = require('./model/user');
 
 var app = express();
 app.use(bodyParser.json());
-app.post('/author',(req, res) => {
-    var author  = new Author({
-        name : req.body.name,
-        dateOfBirth: req.body.dateOfBirth,
-        dateOfDeath: req.body.dateOfDeath
-    });
+//Post /author
+app.post('/author', (req, res) => {
+    var body = _.pick(req.body, ['name', 'dateOfBirth','dateOfDeath']);
+    var author  = new Author(body);
 
     author.save().then((doc) => {
         res.send(doc);
@@ -21,6 +22,21 @@ app.post('/author',(req, res) => {
         res.status(400).send(e);
     });
 });
+//post /user
+app.post('/user', (req, res) => {
+    var body = _.pick(req.body, ['email', 'password']);
+    var user = new User(body);
+  
+    user.save().then(() => {
+      //res.send(user);
+      return user.generateAuthToken();
+    }).then((token) => {
+        res.header('x-auth', token).send(user);
+    }).catch((e) => {
+      res.status(400).send(e);
+    })
+  });
+  
 
 app.listen(8888, () => {
     console.log('Server started on port 8888');

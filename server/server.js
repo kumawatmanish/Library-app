@@ -8,6 +8,7 @@ const Author = require('./model/author');
 const Book = require('./model/book');
 const BookInstance = require('./model/bookInstance');
 const {User} = require('./model/user');
+const {authenticate} = require('./middleware/authenticate');
 
 var app = express();
 app.use(bodyParser.json());
@@ -36,7 +37,23 @@ app.post('/user', (req, res) => {
       res.status(400).send(e);
     })
   });
+
+// private route
+app.get('/user/me', authenticate, (req, res) => {
+    res.send(req.user);
+  });
   
+// post/user/login
+app.post('/user/login',(req, res) => {
+    var body = _.pick(req.body, ['email', 'password']);
+    User.findByCredentials(body.email, body.password).then((user) => {
+        return user.generateAuthToken().then((token) => {
+            res.header('x-auth', token).send(user);
+        });
+    }).catch((e) => {
+        res.status(400).send();
+    }) 
+});  
 
 app.listen(8888, () => {
     console.log('Server started on port 8888');
